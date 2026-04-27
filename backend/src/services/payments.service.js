@@ -69,8 +69,8 @@ export async function initiatePayment({ orderId, userId, provider, phoneNumber, 
       reference,
       externalReference: result.externalReference || null,
       status: result.success ? TRANSACTION_STATUS.PENDING : TRANSACTION_STATUS.FAILED,
-      rawResponse: result.rawResponse || null,
-      metadata: { operator: operator || null, countryCode },
+      rawResponse: result.rawResponse ? JSON.stringify(result.rawResponse) : null,
+      metadata: JSON.stringify({ operator: operator || null, countryCode }),
     },
   });
 
@@ -125,7 +125,7 @@ export async function handleCallback(payload) {
       status,
       externalReference: externalReference || transaction.externalReference,
       confirmedAt: [TRANSACTION_STATUS.SUCCESS, TRANSACTION_STATUS.FAILED].includes(status) ? new Date() : null,
-      rawResponse: rawResponse || transaction.rawResponse,
+      rawResponse: rawResponse ? JSON.stringify(rawResponse) : transaction.rawResponse,
     },
   });
 
@@ -167,7 +167,7 @@ export async function checkPaymentStatus(reference, userId) {
           status: fresh.status,
           externalReference: fresh.externalReference || undefined,
           confirmedAt: new Date(),
-          rawResponse: fresh.rawResponse || undefined,
+          rawResponse: fresh.rawResponse ? JSON.stringify(fresh.rawResponse) : undefined,
         },
       });
       if (fresh.status === TRANSACTION_STATUS.SUCCESS) {

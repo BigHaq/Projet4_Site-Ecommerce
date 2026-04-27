@@ -139,7 +139,12 @@ async function main() {
     await prisma.product.upsert({
       where: { slug: product.slug },
       update: {},
-      create: product,
+      create: {
+        ...product,
+        images: JSON.stringify(product.images),
+        tags: JSON.stringify(product.tags || []),
+        variants: product.variants ? JSON.stringify(product.variants) : null,
+      },
     });
   }
 
