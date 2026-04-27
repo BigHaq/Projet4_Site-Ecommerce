@@ -1,0 +1,251 @@
+// Prisma Schema — Marché Kora E-Commerce
+// Base de données : PostgreSQL 15
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── Énumérations ──────────────────────────────────────────────
+
+enum Role {
+  CUSTOMER
+  ADMIN
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum TransactionStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  CANCELLED
+  TIMEOUT
+}
+
+enum PaymentProvider {
+  cinetpay
+  mtn_momo
+  moov_money
+  simulation
+}
+
+// ── Modèles ───────────────────────────────────────────────────
+
+model User {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  passwordHash String
+  firstName    String
+  lastName     String
+  phone        String?   // Format E.164 ex: +22967123456
+  role         Role      @default(CUSTOMER)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  // Relations
+  cart         Cart?
+  orders       Order[]
+  addresses    Address[]
+  reviews      Review[]
+  transactions Transaction[]
+  refreshTokens RefreshToken[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("refresh_tokens")
+}
+
+model Category {
+  id          String    @id @default(uuid())
+  name        String    @unique
+  slug        String    @unique
+  description String?
+  image       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  products Product[]
+
+  @@map("categories")
+}
+
+model Product {
+  id          String   @id @default(uuid())
+  categoryId  String
+  name        String
+  slug        String   @unique
+  description String
+  price       Int      // Prix en XOF (entiers, jamais float)
+  comparePrice Int?    // Prix barré original en XOF
+  images      String[] // URLs des images
+  stock       Int      @default(0)
+  rating      Float    @default(0)
+  reviewCount Int      @default(0)
+  isActive    Boolean  @default(true)
+  isFeatured  Boolean  @default(false)
+  tags        String[]
+  variants    Json?    // {sizes: [], colors: []} format libre
+  weight      Int?     // en grammes (pour livraison)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  category   Category    @relation(fields: [categoryId], references: [id])
+  orderItems OrderItem[]
+  cartItems  CartItem[]
+  reviews    Review[]
+
+  @@map("products")
+}
+
+model Cart {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items CartItem[]
+
+  @@map("carts")
+}
+
+model CartItem {
+  id        String   @id @default(uuid())
+  cartId    String
+  productId String
+  quantity  Int      @default(1)
+  variant   Json?    // {size: "M", color: "Rouge"}
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  cart    Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  @@unique([cartId, productId])
+  @@map("cart_items")
+}
+
+model Address {
+  id         String   @id @default(uuid())
+  userId     String
+  fullName   String
+  phone      String   // Format E.164
+  street     String
+  district   String?  // Quartier/Arrondissement
+  city       String
+  country    String   // Code ISO 2 lettres ex: BJ, CI, SN
+  isDefault  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orders Order[]
+
+  @@map("addresses")
+}
+
+model Order {
+  id                String      @id @default(uuid())
+  userId            String
+  shippingAddressId String
+  status            OrderStatus @default(PENDING)
+  subtotal          Int         // En XOF
+  shippingFee       Int         @default(0)
+  totalAmount       Int         // En XOF
+  notes             String?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  // Relations
+  user            User          @relation(fields: [userId], references: [id])
+  shippingAddress Address       @relation(fields: [shippingAddressId], references: [id])
+  items           OrderItem[]
+  transactions    Transaction[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String   @id @default(uuid())
+  orderId   String
+  productId String
+  quantity  Int
+  unitPrice Int      // Prix au moment de l'achat en XOF
+  variant   Json?    // Snapshot des variantes choisies
+  createdAt DateTime @default(now())
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  @@map("order_items")
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  productId String
+  userId    String
+  rating    Int      // 1 à 5
+  comment   String?
+  isVerified Boolean @default(false) // Achat vérifié
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@unique([productId, userId])
+  @@map("reviews")
+}
+
+/// Table de transactions — Cœur du module paiement
+/// Tous les montants sont en XOF (entiers)
+/// Les numéros de téléphone sont en format E.164
+model Transaction {
+  id                String            @id @default(uuid())
+  orderId           String
+  userId            String
+  provider          PaymentProvider
+  phoneNumber       String            // E.164, jamais loggé en clair en prod
+  amount            Int               // En XOF (entiers)
+  currency          String            @default("XOF")
+  reference         String            @unique // UUID généré par nous (idempotency key)
+  externalReference String?           // Référence retournée par l'opérateur
+  status            TransactionStatus @default(PENDING)
+  initiatedAt       DateTime          @default(now())
+  confirmedAt       DateTime?
+  rawResponse       Json?             // Réponse brute de l'opérateur (sans données sensibles)
+  metadata          Json?             // Données additionnelles (opérateur cible, pays, etc.)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id])
+  user  User  @relation(fields: [userId], references: [id])
+
+  @@index([reference])
+  @@index([orderId])
+  @@index([userId])
+  @@map("transactions")
+}

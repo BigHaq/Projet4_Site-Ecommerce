@@ -1,0 +1,171 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Import Google Fonts (fallback si CDN non disponible) ── */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400&display=swap');
+
+/* ── Design Tokens CSS — Palette Sahel Doré ─────────────── */
+:root {
+  --color-primary: #C97B2A;
+  --color-primary-dark: #8B4E0E;
+  --color-primary-light: #E8A84E;
+  --color-accent: #1A6B4A;
+  --color-accent-dark: #0F4A32;
+  --color-bg: #FAF7F2;
+  --color-surface: #FFFFFF;
+  --color-text: #1C1917;
+  --color-muted: #78716C;
+  --color-border: #E7E0D8;
+  --color-error: #DC2626;
+  --color-success: #16A34A;
+  --color-warning: #D97706;
+
+  /* Opérateurs Mobile Money */
+  --color-mtn: #FFCC00;
+  --color-moov: #0066CC;
+  --color-wave: #1BA9FF;
+  --color-orange: #FF6600;
+
+  /* Espacements */
+  --nav-height: 72px;
+  --container-max: 1280px;
+
+  /* Ombres */
+  --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.08);
+  --shadow-kora: 0 4px 24px rgba(201, 123, 42, 0.15);
+  --shadow-kora-lg: 0 8px 40px rgba(201, 123, 42, 0.2);
+}
+
+/* ── Reset & Base ────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: 'DM Sans', system-ui, sans-serif;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* ── Typographie ─────────────────────────────────────────── */
+h1, h2, h3 { font-family: 'Playfair Display', Georgia, serif; line-height: 1.2; }
+h4, h5, h6 { font-family: 'DM Sans', sans-serif; font-weight: 600; }
+
+/* ── Composants réutilisables ────────────────────────────── */
+@layer components {
+  /* Boutons */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl font-medium
+           transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2
+           disabled:opacity-50 disabled:cursor-not-allowed select-none;
+  }
+  .btn-primary {
+    @apply btn bg-primary text-white hover:bg-primary-dark active:scale-95
+           focus:ring-primary shadow-kora hover:shadow-kora-lg;
+    padding: 12px 24px;
+  }
+  .btn-secondary {
+    @apply btn border-2 border-primary text-primary hover:bg-primary hover:text-white
+           focus:ring-primary;
+    padding: 10px 24px;
+  }
+  .btn-ghost {
+    @apply btn text-kora-muted hover:text-kora-text hover:bg-kora-border/50
+           focus:ring-kora-border;
+    padding: 10px 16px;
+  }
+  .btn-sm { @apply text-sm; padding: 8px 16px; border-radius: 10px; }
+  .btn-lg { @apply text-lg; padding: 16px 32px; border-radius: 14px; }
+
+  /* Input */
+  .input {
+    @apply w-full rounded-xl border border-kora-border bg-white px-4 py-3 text-sm
+           text-kora-text placeholder:text-kora-muted
+           focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent
+           transition-all duration-200 disabled:bg-kora-bg disabled:cursor-not-allowed;
+  }
+  .input-error { @apply border-red-400 focus:ring-red-400; }
+
+  /* Card */
+  .card {
+    @apply bg-white rounded-2xl shadow-card border border-kora-border/50
+           transition-all duration-300;
+  }
+  .card-hover { @apply hover:shadow-kora hover:-translate-y-1; }
+
+  /* Badge */
+  .badge {
+    @apply inline-flex items-center gap-1 rounded-full text-xs font-semibold px-2.5 py-1;
+  }
+  .badge-primary { @apply badge bg-primary/10 text-primary; }
+  .badge-accent { @apply badge bg-accent/10 text-accent; }
+  .badge-error { @apply badge bg-red-50 text-red-600; }
+  .badge-success { @apply badge bg-green-50 text-green-700; }
+  .badge-muted { @apply badge bg-kora-border text-kora-muted; }
+
+  /* Container */
+  .container-kora {
+    @apply mx-auto px-4 sm:px-6 lg:px-8;
+    max-width: var(--container-max);
+  }
+
+  /* Section title */
+  .section-title {
+    @apply font-display text-2xl md:text-3xl lg:text-4xl font-bold text-kora-text;
+  }
+
+  /* Price display */
+  .price {
+    @apply font-semibold text-kora-text tabular-nums;
+  }
+  .price-large { @apply price text-2xl; }
+  .price-original { @apply line-through text-kora-muted font-normal; }
+
+  /* Skeleton loader */
+  .skeleton {
+    @apply bg-gradient-to-r from-kora-border via-kora-bg to-kora-border bg-[length:200%_100%]
+           animate-pulse rounded-lg;
+  }
+
+  /* Divider */
+  .divider { @apply border-t border-kora-border my-6; }
+}
+
+/* ── Scrollbar personnalisée ─────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--color-bg); }
+::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-muted); }
+
+/* ── Animation utilitaires ───────────────────────────────── */
+.animate-fade-in { animation: fadeIn 0.3s ease-out; }
+.animate-slide-up { animation: slideUp 0.4s ease-out; }
+.animate-slide-in-right { animation: slideInRight 0.3s ease-out; }
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes slideInRight { from { opacity: 0; transform: translateX(100%); } to { opacity: 1; transform: translateX(0); } }
+
+/* ── USSD Pulse animation ────────────────────────────────── */
+@keyframes ussdPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(26, 107, 74, 0.4); }
+  50% { box-shadow: 0 0 0 20px rgba(26, 107, 74, 0); }
+}
+.ussd-pulse { animation: ussdPulse 2s ease-in-out infinite; }
+
+/* ── Responsive image ────────────────────────────────────── */
+img { max-width: 100%; height: auto; display: block; }
+img[loading="lazy"] { background: var(--color-border); }
+
+/* ── Focus visible (accessibilité) ──────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
